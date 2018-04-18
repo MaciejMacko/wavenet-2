@@ -1,9 +1,10 @@
 # coding: utf-8
-import sys
-import os
-import tensorflow as tf
 import argparse
+import os
+import sys
 from time import time
+
+import tensorflow as tf
 
 module_path = os.path.abspath(os.getcwd())
 if module_path not in sys.path:
@@ -12,7 +13,7 @@ if module_path not in sys.path:
 from apps.vocoder.model import Vocoder, optimizer_factory
 from apps.vocoder.hparams import hparams
 from apps.vocoder.datasets.data_feeder import DataFeeder
-from apps.vocoder.audio import save_wav
+from utils.audio import save_wav
 
 PRINT_LOSS_EVERY = 100
 

@@ -9,47 +9,47 @@ from wavenet.model import WaveNetModel, create_bias_variable
 import nnmnkwii.preprocessing as P
 
 class Vocoder(object):
-    def __init__(self, hparams, max_to_keep=5):
-        self.hparams = hparams
+    def __init__(self, hp, max_to_keep=5):
+        self.hp = hp
 
-        dilations_factor = hparams.layers // hparams.stacks
-        dilations = [2 ** i for j in range(hparams.stacks) for i in range(dilations_factor)]
+        dilations_factor = hp.layers // hp.stacks
+        dilations = [2 ** i for j in range(hp.stacks) for i in range(dilations_factor)]
 
-        self.upsample_factor = hparams.upsample_factor
-        self.gc_enable = hparams.gc_enable
+        self.upsample_factor = hp.upsample_factor
+        self.gc_enable = hp.gc_enable
         global_condition_channels = None
         global_condition_cardinality = None
-        if hparams.gc_enable:
-            global_condition_channels = hparams.global_channel
-            global_condition_cardinality = hparams.global_cardinality
+        if hp.gc_enable:
+            global_condition_channels = hp.global_channel
+            global_condition_cardinality = hp.global_cardinality
 
-        scalar_input = hparams.input_type == "raw"
-        quantization_channels = hparams.quantize_channels[hparams.input_type]
+        scalar_input = hp.input_type == "raw"
+        quantization_channels = hp.quantize_channels[hp.input_type]
         if scalar_input:
             quantization_channels = None
 
         with tf.variable_scope('vocoder'):
-            self.net = WaveNetModel(batch_size=hparams.batch_size,
+            self.net = WaveNetModel(batch_size=hp.batch_size,
                                     dilations=dilations,
-                                    filter_width=hparams.filter_width,
+                                    filter_width=hp.filter_width,
                                     scalar_input=scalar_input,
-                                    initial_filter_width=hparams.initial_filter_width,
-                                    residual_channels=hparams.residual_channels,
-                                    dilation_channels=hparams.dilation_channels,
+                                    initial_filter_width=hp.initial_filter_width,
+                                    residual_channels=hp.residual_channels,
+                                    dilation_channels=hp.dilation_channels,
                                     quantization_channels=quantization_channels,
-                                    out_channels=hparams.out_channels,
-                                    skip_channels=hparams.skip_channels,
+                                    out_channels=hp.out_channels,
+                                    skip_channels=hp.skip_channels,
                                     global_condition_channels=global_condition_channels,
                                     global_condition_cardinality=global_condition_cardinality,
                                     use_biases=True,
-                                    local_condition_channels=hparams.num_mels)
+                                    local_condition_channels=hp.n_mel_bins)
 
-            if hparams.upsample_conditional_features:
+            if hp.upsample_conditional_features:
                 with tf.variable_scope('upsample_layer') as upsample_scope:
                     layer = dict()
-                    for i in range(len(hparams.upsample_factor)):
-                        shape = [hparams.upsample_factor[i], hparams.filter_width, 1, 1]
-                        weights = np.ones(shape) * 1 / float(hparams.upsample_factor[i])
+                    for i in range(len(hp.upsample_factor)):
+                        shape = [hp.upsample_factor[i], hp.filter_width, 1, 1]
+                        weights = np.ones(shape) * 1 / float(hp.upsample_factor[i])
                         init = tf.constant_initializer(value=weights, dtype=tf.float32)
                         variable = tf.get_variable(name='upsample{}'.format(i), initializer=init, shape=weights.shape)
                         layer['upsample{}_filter'.format(i)] = variable
@@ -85,7 +85,7 @@ class Vocoder(object):
 
     def loss(self, x, l, g):
         self.upsampled_lc = self.create_upsample(l)
-        loss = self.net.loss(x, self.upsampled_lc, g, l2_regularization_strength=self.hparams.l2_regularization_strength)
+        loss = self.net.loss(x, self.upsampled_lc, g, l2_regularization_strength=self.hp.l2_regularization_strength)
 
         return loss
 
